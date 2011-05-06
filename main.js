@@ -24,7 +24,7 @@ module.exports = (function(){
     }
 
     function render(template, data){
-        data = merge(data)
+        data = merge(data);
         var html = [];
         template = (typeof(template) === "object") ? template : templates[template];
 
@@ -33,7 +33,17 @@ module.exports = (function(){
             if (typeof(s) === "object") {
                 if (s.type === "template") {
                     var d = (s.param) ? resolve(s.param, data) : data;
-                    html.push(render(templates[s.name], d));
+					var t = templates[s.name];
+
+					if(typeof(d.forEach) === "function") {
+						// if d is an array, render each item
+						for(var j=0;j<d.length;j++) {
+							html.push(render(t, d[j]));
+						}
+					} else {
+						// otherwise, just render d
+						html.push(render(t, d));
+					}
                 }
                 else {
                     html.push(resolve(s.name, data) || "");
@@ -97,12 +107,14 @@ module.exports = (function(){
     }
 
     function parseParameter(param){
-        if (!param)
-            return "";
+        if (!param) {
+			return "";
+		}
 
         var result = param.match(paramFormat);
-        if (!result)
-            return "";
+        if (!result) {
+			return "";
+		}
 
         var o = {
             type: result[1],
