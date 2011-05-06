@@ -1,107 +1,128 @@
-module.exports = (function() {
-  var templates = {};
-  var param = /\${.*?}/g;
-  // format = ${type:-name(param).  type, -, and param are optional.  minimum is ${name}
-  var paramFormat = /\${\s*(?:(.*):)?(-)?([\w\._]+)(?:\(([\w\._]+)\))?\s*}/;
-  var globals = {};
+module.exports = (function(){
+    var fs = require("fs");
+    var templates = {};
+    var param = /\${.*?}/g;
+    // format = ${type:-name(param).  type, -, and param are optional.  minimum is ${name}
+    var paramFormat = /\${\s*(?:(.*):)?(-)?([\w\._]+)(?:\(([\w\._]+)\))?\s*}/;
+    var globals = {};
 
-  function merge(data) {
-    var d = {}
-    if(globals) {
-      for(var k in globals) {
-        d[k] = globals[k]
-      }
-    }
-
-    if(data) {
-      for(var j in data) {
-        d[j] = data[j];
-      }
-    }
-
-    return d;
-  }
-
-  function render(template, data) {
-    data = merge(data)
-    var html = [];
-    template = (typeof(template) === "object") ? template : templates[template];
-
-    for(var i=0;i<template.length;i++) {
-      var s = template[i];
-      if(typeof(s) === "object") {
-      
-        if(s.type === "template") {
-          var d = (s.param) ? resolve(s.param, data) : data;
-          html.push(render(templates[s.name], d));
-        } else {
-          html.push(resolve(s.name, data) || "");
+    function merge(data){
+        var d = {}
+        if (globals) {
+            for (var k in globals) {
+                d[k] = globals[k];
+            }
         }
-      } else {
-        html.push(s);
-      }
+
+        if (data) {
+            for (var j in data) {
+                d[j] = data[j];
+            }
+        }
+
+        return d;
     }
 
-    return html.join("");
-  }
+    function render(template, data){
+        data = merge(data)
+        var html = [];
+        template = (typeof(template) === "object") ? template : templates[template];
 
-  function addTemplate(name, html) {
-    templates[name] = parseTemplate(html);
+        for (var i = 0; i < template.length; i++) {
+            var s = template[i];
+            if (typeof(s) === "object") {
+                if (s.type === "template") {
+                    var d = (s.param) ? resolve(s.param, data) : data;
+                    html.push(render(templates[s.name], d));
+                }
+                else {
+                    html.push(resolve(s.name, data) || "");
+                }
+            }
+            else {
+                html.push(s);
+            }
+        }
 
-    return this;
-  }
-
-  function parseTemplate(html) {
-    var segments = [];
-
-    var params = html.match(param);
-    if(params === null) {
-      return [html];
+        return html.join("");
     }
 
-    var items = html.replace(param, "${!}").split("${!}");
+    function addTemplate(name, html){
+        console.log(name, html);
+        templates[name] = parseTemplate(html);
 
-    for(var i=0;i<items.length;i++) {
-      if(items[i].length !== 0) {
-        segments.push(items[i]);
-      }
-      segments.push(parseParameter(params.shift()));
+        return this;
     }
 
-    return segments;
-  }
+    function addFromFile(name, path){
+        var html;
+        try {
+            html = fs.readFileSync(path, "utf8");
+        } catch (e) {
+            throw e;
+        }
 
-  function resolve(param, data) {
+        addTemplate(name, html);
 
-    var parts = param.split(".");
-
-    for(var i=0;i<parts.length;i++) {
-      data = data[parts[i]];
+        return this;
     }
 
-    return data;
-  }
+    function parseTemplate(html){
+        var segments = [];
 
-  function parseParameter(param) {
-    if(!param) return  "";
+        var params = html.match(param);
+        if (params === null) {
+            return [html];
+        }
 
-    var result = param.match(paramFormat);
-    if(!result) return "";
+        var items = html.replace(param, "${!}").split("${!}");
 
-    var o = {
-      type:result[1],
-      escape:(result[2] === "-"),
-      name:result[3],
-      param:(result[1]) ? result[4] : undefined
-    };
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].length !== 0) {
+                segments.push(items[i]);
+            }
+            segments.push(parseParameter(params.shift()));
+        }
 
-    return o;
-  }
+        return segments;
+    }
 
-  return {
-    render:render,
-    add:addTemplate,
-    templates:templates,
-    setGlobals:function(g) { globals = g; return this;}
-  }
+    function resolve(param, data){
+        var parts = param.split(".");
+
+        for (var i = 0; i < parts.length; i++) {
+            data = data[parts[i]];
+        }
+
+        return data;
+    }
+
+    function parseParameter(param){
+        if (!param)
+            return "";
+
+        var result = param.match(paramFormat);
+        if (!result)
+            return "";
+
+        var o = {
+            type: result[1],
+            escape: (result[2] === "-"),
+            name: result[3],
+            param: (result[1]) ? result[4] : undefined
+        };
+
+        return o;
+    }
+
+    return {
+        render: render,
+        add: addTemplate,
+        addFromFile: addFromFile,
+        templates: templates,
+        setGlobals: function(g){
+            globals = g;
+            return this;
+        }
+    }
 })();
