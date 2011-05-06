@@ -1,0 +1,14 @@
+{
+  "name": "simplate",
+  "description": "Simple template (see what I did there) engine for node.js",
+  "version": "0.1.0",
+  "homepage": "http://github.com/tiqtech/simplate",
+  "author": "ryanjduffy",
+  "main": "main",
+  "directories": {
+    "lib": "."
+  },
+  "engines": {
+    "node": "*"
+  }
+}
