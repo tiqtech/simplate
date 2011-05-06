@@ -48,7 +48,6 @@ module.exports = (function(){
     }
 
     function addTemplate(name, html){
-        console.log(name, html);
         templates[name] = parseTemplate(html);
 
         return this;
